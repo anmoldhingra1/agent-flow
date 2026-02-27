@@ -1,8 +1,8 @@
 # Contributing
 
-Contributions are welcome. Here is how to get started.
+Contributions are welcome. Here's how to get started:
 
-## Development Setup
+## Setup
 
 ```bash
 git clone https://github.com/anmoldhingra1/agent-flow.git
@@ -10,17 +10,27 @@ cd agent-flow
 pip install -e ".[dev]"
 ```
 
-## Guidelines
+## Running Tests
 
-- Write tests for new features
-- Follow existing code style
-- Keep PRs focused: one feature or fix per PR
-- Add docstrings to all public methods
+```bash
+pytest tests/ -v
+```
+
+## Code Style
+
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting:
+
+```bash
+ruff check .
+```
+
+## Pull Requests
+
+1. Fork the repo and create a branch from `main`.
+2. Add tests for any new functionality.
+3. Ensure all tests pass and linting is clean.
+4. Open a PR with a clear description of the change.
 
 ## Reporting Issues
 
-Open an issue with a clear description and minimal reproduction steps.
-
-## License
-
-By contributing, you agree that your contributions will be licensed under MIT.
+Open an issue with steps to reproduce the problem and your Python version.

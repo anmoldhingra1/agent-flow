@@ -1,265 +1,150 @@
-\![CI](https://github.com/anmoldhingra1/agent-flow/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/anmoldhingra1/agent-flow/actions/workflows/ci.yml/badge.svg)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 # agent-flow
 
-A lightweight multi-agent orchestration framework for building AI workflows. Define agents with specific roles, compose them into sequential or parallel pipelines, manage state across handoffs, and route intelligently based on content or conditions.
+A lightweight framework for composing multi-agent AI workflows. Define agents with specific roles, wire them into sequential or parallel pipelines, and route dynamically based on content or conditions.
 
-## Installation
+No vendor lock-in — bring any LLM provider.
+
+## Install
 
 ```bash
 pip install agent-flow
 ```
 
-Or install from source:
-
-```bash
-git clone https://github.com/anmol-dhingra/agent-flow.git
-cd agent-flow
-pip install -e .
-```
-
 ## Quick Start
-
-Here's a 3-agent research pipeline that takes a topic, researches it, analyzes findings, and produces a report:
 
 ```python
 from agent_flow import Agent, Flow, AgentConfig, FlowConfig
 
-# Define agents
 researcher = Agent(AgentConfig(
     name="researcher",
     role="Research specialist",
-    system_prompt="You are a research specialist. Gather detailed information on the topic.",
+    system_prompt="Gather detailed information on the given topic.",
 ))
 
-analyzer = Agent(AgentConfig(
-    name="analyzer",
+analyst = Agent(AgentConfig(
+    name="analyst",
     role="Data analyst",
-    system_prompt="You are a data analyst. Analyze the research findings and extract key insights.",
+    system_prompt="Analyze the research findings and extract key insights.",
 ))
 
 writer = Agent(AgentConfig(
     name="writer",
     role="Technical writer",
-    system_prompt="You are a technical writer. Create a structured report from the analysis.",
+    system_prompt="Create a structured report from the analysis.",
 ))
 
-# Create flow
-flow = Flow(FlowConfig(
-    name="research_pipeline",
-    description="Research topic, analyze, and write report"
-))
-
-# Add agents and steps
+flow = Flow(FlowConfig(name="research_pipeline"))
 flow.add_agent(researcher)
-flow.add_agent(analyzer)
+flow.add_agent(analyst)
 flow.add_agent(writer)
 
 flow.add_step("researcher")
-flow.add_step("analyzer")
+flow.add_step("analyst")
 flow.add_step("writer")
 
-# Execute
 result = flow.run(input_data="Climate change impacts on agriculture")
-print(result["results"]["writer_2"])  # Final report
 ```
 
-## Core Concepts
+## Features
 
-### Agent
-
-An Agent executes a specific role or task. It has:
-
-- **name**: Unique identifier
-- **role**: Human-readable description of what it does
-- **system_prompt**: Instructions for the LLM
-- **model**: LLM model to use (default: gpt-4-turbo)
-- **execute()**: Processes input and returns AgentResult
-
-Agents support retry logic, tool execution, and maintain execution history.
+**Agents** — Each agent wraps an LLM call with a system prompt, retry logic, tool execution, and execution history. Swap the LLM provider without changing your pipeline code.
 
 ```python
+from agent_flow import Agent, AgentConfig
+
 agent = Agent(AgentConfig(
     name="classifier",
     role="Content classifier",
-    system_prompt="Classify the content as technical or business.",
-    model="gpt-4-turbo",
+    system_prompt="Classify the input as technical or business.",
     temperature=0.3,
     retry_attempts=3,
 ))
-
-result = agent.execute("Is machine learning production-ready?")
-print(result.output)
+result = agent.execute("Is this a production-ready ML system?")
 ```
 
-### Flow
-
-A Flow orchestrates agents into workflows. It manages:
-
-- **Agent registration**: add_agent()
-- **Sequential steps**: add_step()
-- **Parallel execution**: add_parallel_step()
-- **State management**: FlowState passed between agents
-- **Event hooks**: on_step_start, on_step_complete, on_error
+**Parallel execution** — Run independent agents concurrently and collect results.
 
 ```python
-flow = Flow(FlowConfig(
-    name="content_pipeline",
-    timeout_seconds=300,
-))
-
-flow.add_agent(agent1)
-flow.add_agent(agent2)
-
-flow.add_step("agent1")
-flow.add_parallel_step(["agent2", "agent3"])  # Run in parallel
-flow.add_step("agent4")  # Depends on parallel group
-
-result = flow.run(input_data="Process this content")
+flow.add_parallel_step(["summarizer", "sentiment", "keywords"])
+result = flow.run(input_data="Article text...")
 ```
 
-### Router
-
-Routers enable conditional branching. Available routers:
-
-- **ConditionalRouter**: Route based on custom conditions
-- **ContentRouter**: Route based on classification
-- **FallbackRouter**: Try agents in order until one succeeds
-- **RoundRobinRouter**: Distribute load across agents
+**Routing** — Branch pipelines based on agent output using built-in routers.
 
 ```python
 from agent_flow import ConditionalRouter
 
 router = ConditionalRouter(
     conditions={
-        "billing_agent": lambda output, state: "billing" in output.lower(),
-        "technical_agent": lambda output, state: "error" in output.lower(),
+        "billing": lambda output, state: "invoice" in output.lower(),
+        "support": lambda output, state: "help" in output.lower(),
     },
-    default_agent="general_agent",
+    default_agent="general",
 )
 ```
 
-## Architecture
+Four router types included: `ConditionalRouter`, `ContentRouter`, `FallbackRouter`, `RoundRobinRouter`.
 
-agent-flow consists of:
-
-- **Agent**: Wraps LLM execution with retry logic and tool support
-- **Flow**: Orchestrates agents with sequential/parallel/conditional execution
-- **FlowState**: Manages immutable state snapshots and history
-- **Router**: Enables intelligent routing between agents
-- **Types**: Data classes for configuration and results
-
-All components use type hints and produce structured outputs suitable for further processing or storage.
-
-## Advanced Usage
-
-### Conditional Routing
-
-Route to different agents based on agent output:
-
-```python
-from agent_flow import ConditionalRouter
-
-def is_complex_question(output, state):
-    return len(output.split()) > 50 or "complex" in output.lower()
-
-router = ConditionalRouter(
-    conditions={
-        "advanced_agent": is_complex_question,
-        "simple_agent": lambda o, s: not is_complex_question(o, s),
-    },
-    default_agent="fallback_agent",
-)
-
-flow.add_router(step_index=1, router=router)
-```
-
-### Parallel Execution
-
-Execute multiple agents concurrently:
-
-```python
-# Execute three agents in parallel
-flow.add_parallel_step(
-    agent_names=["summarizer", "sentiment_analyzer", "keyword_extractor"],
-    metadata={"timeout_per_agent": 30},
-)
-
-result = flow.run(input_data="Long article text...")
-
-# Access parallel results
-print(result["results"]["summarizer_parallel_0"])
-print(result["results"]["sentiment_analyzer_parallel_1"])
-print(result["results"]["keyword_extractor_parallel_2"])
-```
-
-### State Management
-
-Access and modify flow state across agents:
+**State management** — Immutable snapshots track state across every handoff. Rollback to any checkpoint.
 
 ```python
 from agent_flow import FlowState
 
-state = FlowState(initial_state={"user_id": 123, "context": "support_ticket"})
-
-# Agents can read state
-agent_result = agent.execute("Help this customer", state)
-
-# State is updated by each step
-state.set("last_agent", "support_agent")
-state.set("ticket_status", "resolved")
-
-# Get immutable snapshots
-history = state.get_history()
-state.snapshot("checkpoint_1")
-
-# Rollback if needed
-state.rollback_to(0)
+state = FlowState({"user_id": 123})
+state.snapshot("before_analysis")
+# ... run agents ...
+state.rollback_to(0)  # restore checkpoint
 ```
 
-### Event Hooks
-
-React to flow execution events:
+**Event hooks** — React to step lifecycle events for logging, metrics, or custom logic.
 
 ```python
-def on_step_complete(event):
-    print(f"Step {event.step_name} completed in {event.data['execution_time_ms']}ms")
-
-def on_error(event):
-    print(f"Error in {event.step_name}: {event.data['error']}")
-
-flow.on_step_complete.append(on_step_complete)
-flow.on_error.append(on_error)
-
-flow.run(input_data="...")
+flow.on_step_complete.append(
+    lambda e: print(f"{e.step_name} done in {e.data['execution_time_ms']:.0f}ms")
+)
 ```
 
-### Tool Integration
-
-Define tools that agents can call:
+**Tools** — Give agents callable tools with structured parameter schemas.
 
 ```python
 from agent_flow import ToolDefinition
 
-def calculate(expression: str) -> float:
-    return eval(expression)
-
-tool = ToolDefinition(
+agent.add_tool(ToolDefinition(
     name="calculator",
-    description="Evaluate mathematical expressions",
-    parameters={
-        "type": "object",
-        "properties": {
-            "expression": {"type": "string", "description": "Math expression"}
-        },
-        "required": ["expression"],
-    },
-    handler=calculate,
-)
-
-agent.add_tool(tool)
+    description="Evaluate math expressions",
+    parameters={"type": "object", "properties": {"expr": {"type": "string"}}},
+    handler=lambda expr: eval(expr),
+))
 ```
+
+## Architecture
+
+```
+Agent ──┐
+Agent ──┤── Flow (sequential / parallel / routed) ── FlowState
+Agent ──┘                                              │
+  │                                                Snapshots
+  └── LLMProvider (pluggable)                      History
+       ├── OpenAI                                  Rollback
+       ├── Anthropic
+       └── MockLLMProvider (testing)
+```
+
+Components: `Agent` (LLM execution + retry), `Flow` (orchestration), `FlowState` (immutable state tracking), `Router` (conditional branching), `Types` (typed configs and results).
+
+## Testing
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -v
+```
+
+62 tests covering agents, flows, routers, and state management.
 
 ## License
 
-MIT License. See LICENSE file for details.
+MIT
