@@ -1,3 +1,5 @@
+\![CI](https://github.com/anmoldhingra1/agent-flow/actions/workflows/ci.yml/badge.svg)
+
 # agent-flow
 
 A lightweight multi-agent orchestration framework for building AI workflows. Define agents with specific roles, compose them into sequential or parallel pipelines, manage state across handoffs, and route intelligently based on content or conditions.
