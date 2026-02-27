@@ -1,3 +1,4 @@
+from typing import Dict, Any
 """
 Example: Multi-agent research pipeline.
 
@@ -13,8 +14,7 @@ Usage:
     python examples/research_pipeline.py
 """
 
-import json
-from agent_flow import Agent, Flow, AgentConfig, FlowConfig, FlowState
+from agent_flow import Agent, Flow, AgentConfig, FlowConfig  # noqa: E402
 
 
 def create_research_agent() -> Agent:
@@ -28,7 +28,7 @@ def create_research_agent() -> Agent:
         - Key facts and figures
         - Recent developments
         - Different perspectives
-        
+
         Format your response as a structured research document.""",
         model="gpt-4-turbo",
         temperature=0.7,
@@ -48,7 +48,7 @@ def create_analyzer_agent() -> Agent:
         - Critical insights
         - Implications for different stakeholders
         - Risk and opportunity assessment
-        
+
         Be concise and data-driven in your analysis.""",
         model="gpt-4-turbo",
         temperature=0.5,
@@ -70,7 +70,7 @@ def create_writer_agent() -> Agent:
         - Analysis and implications
         - Recommendations
         - Conclusion
-        
+
         Use clear sections and professional formatting.""",
         model="gpt-4-turbo",
         temperature=0.6,
@@ -79,12 +79,12 @@ def create_writer_agent() -> Agent:
     return Agent(config)
 
 
-def run_research_pipeline(topic: str) -> Dict[str, any]:
+def run_research_pipeline(topic: str) -> Dict[str, Any]:
     """Execute the research pipeline.
-    
+
     Args:
         topic: Topic to research
-        
+
     Returns:
         Dictionary with pipeline results
     """
@@ -92,85 +92,84 @@ def run_research_pipeline(topic: str) -> Dict[str, any]:
     researcher = create_research_agent()
     analyzer = create_analyzer_agent()
     writer = create_writer_agent()
-    
+
     # Create flow
     flow = Flow(FlowConfig(
         name="research_pipeline",
         description="Multi-agent research, analysis, and report writing",
         timeout_seconds=300,
     ))
-    
+
     # Add agents
     flow.add_agent(researcher)
     flow.add_agent(analyzer)
     flow.add_agent(writer)
-    
+
     # Define workflow steps
     flow.add_step("researcher")
     flow.add_step("analyzer")
     flow.add_step("writer")
-    
+
     # Add event hooks for monitoring
     def on_step_start(event):
         print(f"\n{'='*60}")
         print(f"Starting: {event.step_name}")
         print(f"{'='*60}")
-    
+
     def on_step_complete(event):
         time_ms = event.data.get("execution_time_ms", 0)
         print(f"Completed: {event.step_name} ({time_ms:.0f}ms)")
-    
+
     def on_error(event):
         print(f"ERROR in {event.step_name}: {event.data.get('error')}")
-    
+
     flow.on_step_start.append(on_step_start)
     flow.on_step_complete.append(on_step_complete)
     flow.on_error.append(on_error)
-    
+
     # Run the pipeline
     print(f"\nResearching: {topic}")
     print(f"{'='*60}")
-    
+
     result = flow.run(
         input_data=f"Research and produce a comprehensive report on: {topic}",
         initial_state={"topic": topic},
     )
-    
+
     return result
 
 
 def main() -> None:
     """Run the research pipeline example."""
-    import time
-    
+
     # Example topic
     topic = "Quantum computing applications in drug discovery"
-    
+
     try:
         result = run_research_pipeline(topic)
-        
+
         print(f"\n{'='*60}")
         print("PIPELINE EXECUTION SUMMARY")
         print(f"{'='*60}")
-        
+
         if result["success"]:
-            print(f"Status: SUCCESS")
+            print("Status: SUCCESS")
             print(f"Total execution time: {result['execution_time_ms']:.0f}ms")
-            
-            print(f"\nFinal Report (Writer Output):")
+
+            print("\nFinal Report (Writer Output):")
             print("-" * 60)
-            
+
             # Get the final report from writer agent
             for key, value in result["results"].items():
                 if "writer" in key:
                     print(value)
                     break
-            
+
             print(f"\nState snapshot history: {len(result['state'].get('_state_snapshots', []))} snapshots")
         else:
-            print(f"Status: FAILED")
+            print("Status: FAILED")
             print(f"Error: {result.get('error')}")
-            
+
     except Exception as e:
         print(f"Error running pipeline: {e}")
         import traceback

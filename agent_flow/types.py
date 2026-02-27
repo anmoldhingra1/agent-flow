@@ -21,14 +21,14 @@ class RouterType(str, Enum):
 @dataclass
 class AgentResult:
     """Result returned by an agent execution."""
-    
+
     agent_name: str
     success: bool
     output: Any
     error: Optional[str] = None
     tokens_used: Optional[Dict[str, int]] = None
     execution_time_ms: float = 0.0
-    
+
     def __str__(self) -> str:
         """Return string representation of the result."""
         if self.success:
@@ -39,12 +39,12 @@ class AgentResult:
 @dataclass
 class ToolDefinition:
     """Definition of a tool/function an agent can use."""
-    
+
     name: str
     description: str
     parameters: Dict[str, Any]
     handler: Optional[Callable[..., Any]] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for LLM APIs."""
         return {
@@ -57,7 +57,7 @@ class ToolDefinition:
 @dataclass
 class AgentConfig:
     """Configuration for an agent."""
-    
+
     name: str
     role: str
     system_prompt: str
@@ -73,7 +73,7 @@ class AgentConfig:
 @dataclass
 class FlowStep:
     """Definition of a step in the flow."""
-    
+
     agent_name: str
     step_type: StepType = StepType.SEQUENTIAL
     depends_on: List[str] = field(default_factory=list)
@@ -83,7 +83,7 @@ class FlowStep:
 @dataclass
 class RouterDecision:
     """Decision made by a router."""
-    
+
     next_agent: str
     confidence: float = 1.0
     reason: Optional[str] = None
@@ -93,7 +93,7 @@ class RouterDecision:
 @dataclass
 class FlowConfig:
     """Configuration for a flow."""
-    
+
     name: str
     description: str = ""
     timeout_seconds: int = 300
@@ -105,7 +105,7 @@ class FlowConfig:
 @dataclass
 class FlowEvent:
     """Event emitted during flow execution."""
-    
+
     event_type: str  # "step_start", "step_complete", "error", etc.
     timestamp: float
     flow_name: str
