@@ -1,7 +1,5 @@
 """Tests for Agent class."""
 
-import pytest
-
 from agent_flow import Agent, AgentConfig, MockLLMProvider
 from agent_flow.agent import LLMProvider
 from agent_flow.types import ToolDefinition
