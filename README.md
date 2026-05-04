@@ -8,10 +8,26 @@ A lightweight framework for composing multi-agent AI workflows. Define agents wi
 
 No vendor lock-in — bring any LLM provider.
 
-## Install
+## Why This Exists
+
+Most agent demos look magical until the workflow needs state, retries, routing, and repeatable handoffs. This repo is a small orchestration layer for those production-shaped concerns: agents, flows, routers, immutable state snapshots, and event hooks.
+
+It is also a public proof point for the Rerato thesis: the hard part of AI applications is often not the model call, but the orchestration around it.
+
+## What It Shows
+
+- Sequential, parallel, and routed agent execution
+- Typed configs for agents, flows, tools, routers, and results
+- Pluggable LLM providers with a mock provider for tests
+- State snapshots and rollback across handoffs
+- Lifecycle hooks for logging, metrics, and debugging
+
+## Install Locally
 
 ```bash
-pip install agent-flow
+git clone https://github.com/anmoldhingra1/agent-flow.git
+cd agent-flow
+pip install -e ".[dev]"
 ```
 
 ## Quick Start
@@ -49,6 +65,15 @@ flow.add_step("writer")
 result = flow.run(input_data="Climate change impacts on agriculture")
 ```
 
+## Example Output
+
+```text
+researcher -> analyst -> writer
+status: completed
+steps: 3
+state snapshots: 4
+```
+
 ## Features
 
 **Agents** — Each agent wraps an LLM call with a system prompt, retry logic, tool execution, and execution history. Swap the LLM provider without changing your pipeline code.
@@ -63,7 +88,7 @@ agent = Agent(AgentConfig(
     temperature=0.3,
     retry_attempts=3,
 ))
-result = agent.execute("Is this a production-ready ML system?")
+result = agent.execute("Route this request to the right support workflow.")
 ```
 
 **Parallel execution** — Run independent agents concurrently and collect results.
@@ -117,7 +142,7 @@ agent.add_tool(ToolDefinition(
     name="calculator",
     description="Evaluate math expressions",
     parameters={"type": "object", "properties": {"expr": {"type": "string"}}},
-    handler=lambda expr: eval(expr),
+        handler=lambda expr: {"result": expr},
 ))
 ```
 
